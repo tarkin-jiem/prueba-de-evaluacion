@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador Institucional EGEL Plus - Biología (80 Reactivos)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        inst: {
+                            900: '#0f172a', // Slate 900
+                            800: '#1e293b', // Slate 800
+                            primary: '#0284c7', // Light blue
+                            accent: '#eab308' // Yellow
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* Custom radio button styles */
+        .option-radio:checked + div {
+            border-color: #0284c7;
+            background-color: #f0f9ff;
+        }
+        .option-radio:checked + div .check-icon {
+            opacity: 1;
+            transform: scale(1);
+        }
+    </style>
+</head>
+<body class="text-slate-800 pb-12">
+
+    <!-- Header Institucional -->
+    <header class="bg-inst-900 text-white shadow-md sticky top-0 z-50 border-b-4 border-inst-accent">
+        <div class="max-w-5xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <i class="fas fa-university text-3xl text-inst-accent"></i>
+                <div>
+                    <h1 class="text-xl md:text-2xl font-bold tracking-tight">Simulador Evaluación</h1>
+                    <p class="text-sm text-slate-300">Ciencias Biológicas • 80 Reactivos</p>
+                </div>
+            </div>
+            <div class="w-full md:w-1/3">
+                <div class="flex justify-between text-xs mb-1 font-medium text-slate-300">
+                    <span id="section-title-progress">Sección 1 / 3</span>
+                    <span id="progress-text">0%</span>
+                </div>
+                <div class="w-full bg-slate-700 rounded-full h-2">
+                    <div id="progress-bar" class="bg-inst-primary h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 mt-8" id="app">
+        <!-- El contenido dinámico se inyectará aquí mediante JavaScript -->
+    </main>
+
+    <!-- Modal de Alerta -->
+    <div id="alert-modal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[100] backdrop-blur-sm px-4">
+        <div class="bg-white rounded-xl p-6 max-w-sm w-full shadow-2xl text-center">
+            <i class="fas fa-exclamation-circle text-4xl text-inst-accent mb-4"></i>
+            <h3 class="text-lg font-bold mb-2">Preguntas sin responder</h3>
+            <p class="text-slate-600 mb-6 text-sm">Debes responder todos los reactivos de esta sección para poder avanzar o finalizar.</p>
+            <button onclick="document.getElementById('alert-modal').classList.replace('flex', 'hidden')" class="w-full bg-inst-900 text-white py-2 rounded-lg font-medium hover:bg-slate-800">
+                Entendido
+            </button>
+        </div>
+    </div>
+
+    <!-- Base de Datos de Preguntas y Lógica -->
+    <script>
+        // 80 Preguntas distribuidas en 3 secciones
+        const db = [
+            {
+                section: "Biodiversidad (27 Reactivos)",
+                icon: "fa-globe-americas",
+                questions: [
+                    { q: "¿Qué postulado NO pertenece a la teoría sintética de la evolución?", o: ["La mutación genera variabilidad.", "La selección natural actúa sobre el fenotipo.", "Los caracteres adquiridos se heredan a la descendencia.", "El aislamiento reproductivo promueve la especiación."], a: 2, h: "Piensa en Lamarck vs. Darwin/Mendel." },
+                    { q: "El concepto biológico de especie (Mayr) define a una especie por su:", o: ["Similitud morfológica.", "Aislamiento reproductivo.", "Nicho ecológico idéntico.", "Secuencia genética exacta."], a: 1, h: "Se enfoca en la capacidad de reproducirse y dejar descendencia fértil." },
+                    { q: "En un cladograma, un clado que incluye a un ancestro común y a todos sus descendientes se denomina:", o: ["Polifilético.", "Parafilético.", "Monofilético.", "Convergente."], a: 2, h: "El prefijo significa 'uno' o 'único'." },
+                    { q: "La estructura homóloga en biología evolutiva evidencia:", o: ["Un ancestro común reciente.", "Evolución convergente.", "Adaptación al mismo entorno.", "Mutaciones idénticas simultáneas."], a: 0, h: "Estructuras similares por origen evolutivo, aunque tengan funciones distintas." },
+                    { q: "El efecto cuello de botella es un ejemplo claro de:", o: ["Selección estabilizadora.", "Deriva génica.", "Flujo génico.", "Mutación direccional."], a: 1, h: "Ocurre por una reducción drástica y aleatoria de la población." },
+                    { q: "El dominio Archaea se diferencia de Bacteria principalmente porque las arqueas:", o: ["Tienen núcleo definido.", "Carecen de peptidoglicano en su pared celular.", "Son organismos multicelulares.", "Realizan fotosíntesis oxigénica siempre."], a: 1, h: "La pared celular bacteriana está hecha de peptidoglicano, las arqueas no lo tienen." },
+                    { q: "¿Cuál es la jerarquía taxonómica correcta de mayor a menor amplitud?", o: ["Dominio, Reino, Clase, Filo, Orden, Familia, Género, Especie", "Dominio, Reino, Filo, Clase, Orden, Familia, Género, Especie", "Reino, Filo, Orden, Clase, Familia, Dominio, Género, Especie", "Filo, Reino, Dominio, Clase, Familia, Orden, Género, Especie"], a: 1, h: "Recuerda la mnemotecnia: Rey Feroz Con Ojos Fuertes Genera Espanto." },
+                    { q: "Las especies endémicas son aquellas que:", o: ["Migran largas distancias.", "Se encuentran exclusivamente en una región geográfica determinada.", "Han sido introducidas por el humano.", "Tienen un amplio rango de distribución global."], a: 1, h: "Están restringidas a un solo lugar." },
+                    { q: "Un 'Hotspot' (punto caliente) de biodiversidad se caracteriza por:", o: ["Alta temperatura promedio anual.", "Baja diversidad y alto riesgo humano.", "Alta concentración de especies endémicas y grave amenaza de pérdida de hábitat.", "Zonas oceánicas con afloramientos de nutrientes."], a: 2, h: "Son áreas ricas en vida pero bajo amenaza constante." },
+                    { q: "La ecuación de Hardy-Weinberg (p² + 2pq + q² = 1) se utiliza para:", o: ["Calcular la tasa de mutación.", "Predecir frecuencias alélicas en poblaciones en equilibrio.", "Medir el índice de diversidad de Shannon.", "Cuantificar el flujo de energía trófica."], a: 1, h: "Asume que no hay evolución actuando." },
+                    { q: "La aparición de nuevas especies en la misma región geográfica sin barreras físicas se llama especiación:", o: ["Alopátrica.", "Simpátrica.", "Parapátrica.", "Peripátrica."], a: 1, h: "Sim = mismo, patria = lugar." },
+                    { q: "En taxonomía vegetal, la terminación '-phyta' se utiliza generalmente para designar:", o: ["La familia.", "El orden.", "La clase.", "La división (equivalente a filo)."], a: 3, h: "Ejemplo: Bryophyta, Pteridophyta." },
+                    { q: "Los líquenes son asociaciones simbióticas principalmente entre:", o: ["Un hongo y un alga (o cianobacteria).", "Una planta y una bacteria fijadora de nitrógeno.", "Un coral y una zooxantela.", "Un hongo y las raíces de un árbol."], a: 0, h: "El hongo da estructura, el otro organismo da alimento por fotosíntesis." },
+                    { q: "¿Qué tipo de extinción afectó a los dinosaurios no avianos hace 66 millones de años?", o: ["Extinción del Pérmico.", "Extinción del Cretácico-Paleógeno (K-Pg).", "Extinción del Holoceno.", "Extinción del Devónico."], a: 1, h: "Límite K-T (o K-Pg), impacto de asteroide." },
+                    { q: "La analogía estructural (ej. alas de insecto y alas de ave) es producto de la:", o: ["Radiación adaptativa.", "Evolución divergente.", "Evolución convergente.", "Deriva génica."], a: 2, h: "Llegar a la misma solución morfológica desde ancestros distintos." },
+                    { q: "El Convenio sobre la Diversidad Biológica (CDB) tiene como uno de sus objetivos principales:", o: ["Prohibir el comercio internacional de todas las especies.", "La conservación in situ y ex situ de la diversidad biológica.", "Erradicar todas las especies invasoras.", "Fomentar la introducción de cultivos transgénicos."], a: 1, h: "Busca un uso sostenible y conservación." },
+                    { q: "Los bancos de semillas y los zoológicos son estrategias primarias de:", o: ["Conservación in situ.", "Conservación ex situ.", "Restauración ecológica.", "Bioprospección."], a: 1, h: "Ocurre fuera del hábitat natural de la especie." },
+                    { q: "La tasa a la que ocurren mutaciones neutrales en el ADN se utiliza en evolución como:", o: ["Reloj molecular.", "Índice de especiación.", "Fuerza selectiva.", "Barrera precigótica."], a: 0, h: "Ayuda a estimar el tiempo de divergencia entre especies." },
+                    { q: "La diversidad biológica se mide comúnmente en tres niveles, que son:", o: ["Genes, células y ecosistemas.", "Genes, especies y ecosistemas.", "Individuos, poblaciones y comunidades.", "Bacterias, plantas y animales."], a: 1, h: "Desde el ADN hasta el nivel más amplio del paisaje." },
+                    { q: "Un carácter apomórfico es:", o: ["Un rasgo primitivo compartido por todos.", "Un rasgo derivado o novedoso evolutivamente.", "Una estructura vestigial inútil.", "Un gen recesivo letal."], a: 1, h: "Es una 'novedad' evolutiva en un linaje." },
+                    { q: "En biogreografía, la región Neotropical comprende:", o: ["América del Norte y Groenlandia.", "Europa, Asia del norte y norte de África.", "Desde el sur de México, Centro y Sudamérica.", "Australia, Nueva Zelanda y Nueva Guinea."], a: 2, h: "Donde están la Amazonía y los Andes tropicales." },
+                    { q: "Las barreras reproductivas precigóticas impiden:", o: ["El desarrollo del embrión.", "La fertilidad de la descendencia (ej. mula).", "La fecundación y formación del cigoto.", "La supervivencia de los híbridos juveniles."], a: 2, h: "Actúan ANTES de que se forme el cigoto." },
+                    { q: "La sistemática molecular utiliza secuencias de ______ para establecer relaciones filogenéticas tempranas debido a su conservación evolutiva.", o: ["ARNm (mensajero).", "ARNr (ribosómico).", "Lípidos de membrana.", "Carbohidratos celulares."], a: 1, h: "Carl Woese lo usó para definir los tres dominios." },
+                    { q: "El pez celacanto es famoso en biología evolutiva porque se le considera un:", o: ["Fósil viviente.", "Anfibio primitivo.", "Mamífero acuático.", "Reptil extinguido."], a: 0, h: "Se creía extinto hace millones de años hasta su redescubrimiento." },
+                    { q: "La variedad de formas de picos de los pinzones de Darwin en Galápagos es el ejemplo clásico de:", o: ["Polimorfismo genético equilibrado.", "Radiación adaptativa.", "Deriva meiótica.", "Endosimbiosis."], a: 1, h: "A partir de un ancestro, surgieron múltiples especies adaptadas a diferentes nichos." },
+                    { q: "Una especie clave o 'keystone species' es vital porque:", o: ["Es la más abundante del ecosistema.", "Es la de mayor tamaño físico.", "Su impacto en la comunidad es desproporcionadamente grande en relación a su abundancia.", "Siempre es un productor primario."], a: 2, h: "Si la quitas, el ecosistema colapsa o cambia drásticamente (ej. lobos, estrellas de mar)." },
+                    { q: "¿Cuál de estos reinos agrupa exclusivamente organismos eucariotas, multicelulares, heterótrofos con digestión interna?", o: ["Plantae.", "Fungi.", "Animalia.", "Protista."], a: 2, h: "Nosotros pertenecemos a este reino." }
+                ]
+            },
+            {
+                section: "Recursos Bióticos (27 Reactivos)",
+                icon: "fa-leaf",
+                questions: [
+                    { q: "En la transferencia de energía entre niveles tróficos, típicamente se transfiere solo alrededor del:", o: ["50%.", "90%.", "10%.", "1%."], a: 2, h: "Regla del diez por ciento (Diezmo ecológico)." },
+                    { q: "Los organismos autótrofos fotosintéticos conforman el nivel de los:", o: ["Productores primarios.", "Consumidores primarios.", "Consumidores secundarios.", "Descomponedores."], a: 0, h: "Son la base de la cadena alimenticia." },
+                    { q: "En el ciclo del carbono, el proceso ecológico que retira CO2 de la atmósfera es:", o: ["La respiración celular.", "La combustión de combustibles fósiles.", "La fotosíntesis.", "La descomposición anaerobia."], a: 2, h: "Las plantas y el fitoplancton hacen este proceso." },
+                    { q: "El fósforo es un nutriente limitante que, a diferencia del carbono y nitrógeno, carece de un depósito significativo en:", o: ["Las rocas sedimentarias.", "La atmósfera (fase gaseosa).", "Los organismos marinos.", "El suelo continental."], a: 1, h: "Su ciclo es sedimentario, no gaseoso." },
+                    { q: "La capacidad de carga (K) en ecología de poblaciones representa:", o: ["El número mínimo de individuos para sobrevivir.", "El tamaño poblacional máximo que un ambiente puede soportar indefinidamente.", "La tasa de natalidad bruta.", "La velocidad máxima de dispersión poblacional."], a: 1, h: "Es el límite superior del crecimiento logístico." },
+                    { q: "Una relación interespecífica donde una especie se beneficia y la otra no se ve afectada (+/0) se llama:", o: ["Mutualismo.", "Comensalismo.", "Amensalismo.", "Parasitismo."], a: 1, h: "Ejemplo: las epífitas sobre los árboles." },
+                    { q: "El fenómeno de eutrofización en cuerpos de agua es causado principalmente por un exceso de:", o: ["Oxígeno disuelto.", "Metales pesados.", "Nitrógeno y fósforo (nutrientes).", "Pesticidas organoclorados."], a: 2, h: "Suele ocurrir por escurrimiento de fertilizantes agrícolas." },
+                    { q: "La huella ecológica mide:", o: ["La cantidad de agua necesaria para producir un bien.", "La superficie de tierra y agua ecológicamente productiva necesaria para sustentar un estilo de vida.", "El nivel de gases de efecto invernadero emitidos.", "La tasa de deforestación anual en hectáreas."], a: 1, h: "Expresa el impacto humano en hectáreas globales." },
+                    { q: "En la sucesión ecológica primaria, las primeras especies en colonizar la roca desnuda se llaman:", o: ["Especies clímax.", "Especies invasoras.", "Especies pioneras (ej. líquenes).", "Especies relicto."], a: 2, h: "Preparan el terreno para especies más complejas." },
+                    { q: "El concepto de 'nicho ecológico' se refiere a:", o: ["El lugar físico donde vive el organismo.", "La función de la especie en el ecosistema, incluyendo sus requerimientos e interacciones.", "La biomasa total de la población.", "El nivel trófico exclusivo del organismo."], a: 1, h: "No es solo la 'dirección', sino la 'profesión' ecológica." },
+                    { q: "La principal causa mundial de pérdida de biodiversidad en la actualidad es:", o: ["El cambio climático.", "La sobreexplotación de especies.", "La pérdida y fragmentación del hábitat.", "La contaminación química."], a: 2, h: "Deforestación, urbanización y agricultura son los motores." },
+                    { q: "Un servicio ecosistémico de 'provisión' incluye:", o: ["Polinización de cultivos.", "Control de inundaciones.", "Madera, alimentos y agua dulce.", "Recreación y turismo de naturaleza."], a: 2, h: "Son los productos tangibles que obtenemos directamente." },
+                    { q: "La biomagnificación (o bioacumulación) hace que toxinas como el DDT se concentren más en:", o: ["Los productores primarios.", "Los consumidores primarios.", "El agua y el suelo.", "Los depredadores tope (niveles tróficos altos)."], a: 3, h: "Se va acumulando conforme se asciende en la cadena alimenticia." },
+                    { q: "Las especies con estrategia 'r' se caracterizan por:", o: ["Alta tasa reproductiva, cuidado parental nulo, vida corta.", "Baja tasa reproductiva, cuidado parental alto, vida larga.", "Poblaciones siempre cercanas a la capacidad de carga.", "Cuerpos grandes y madurez sexual tardía."], a: 0, h: "Piensa en ratones o insectos." },
+                    { q: "El Ordenamiento Ecológico del Territorio en México busca principalmente:", o: ["Declarar todas las tierras como áreas naturales protegidas.", "Regular el uso del suelo para proteger el medio ambiente y aprovechar recursos sustentablemente.", "Centralizar la industria en las capitales.", "Privatizar la gestión del agua potable."], a: 1, h: "Es un instrumento de política pública para equilibrar economía y ecología." },
+                    { q: "Las micorrizas son asociaciones esenciales en ecología forestal entre:", o: ["Hongos y raíces de plantas.", "Bacterias e insectos.", "Algas y corales.", "Plantas y polinizadores."], a: 0, h: "Facilitan la absorción de fósforo y agua del suelo." },
+                    { q: "En dinámica de poblaciones, un crecimiento exponencial asume que:", o: ["Los recursos son limitados.", "Los recursos son ilimitados y no hay resistencia ambiental.", "Hay competencia inter-específica severa.", "La tasa de mortalidad supera a la de natalidad."], a: 1, h: "Curva en forma de 'J'." },
+                    { q: "Los manglares proporcionan un vital servicio ecosistémico de regulación costera al:", o: ["Aportar agua dulce al océano.", "Ser una barrera natural contra huracanes y erosión.", "Eliminar la salinidad marina.", "Incrementar la temperatura del agua superficial."], a: 1, h: "Protegen las costas mediante sus raíces entrelazadas." },
+                    { q: "El ciclo biogeoquímico del nitrógeno depende fundamentalmente de:", o: ["La radiación ultravioleta.", "Bacterias fijadoras, nitrificantes y desnitrificantes.", "La fotosíntesis de algas verdes.", "La meteorización de rocas ígneas."], a: 1, h: "Los microorganismos son los motores del ciclo del N." },
+                    { q: "La zonación bentónica en un ecosistema marino se refiere a:", o: ["La zona de mar abierto superficial.", "Las zonas del fondo marino según la profundidad.", "La columna de agua donde penetra la luz.", "Las áreas de estuarios donde se mezcla el agua dulce."], a: 1, h: "Bentos = fondo." },
+                    { q: "El índice de Simpson evalúa la diversidad considerando:", o: ["Solo la riqueza de especies.", "El grado de dominancia ecológica de unas pocas especies.", "La tasa de mutación genética poblacional.", "El tamaño físico del ecosistema medido."], a: 1, h: "Mide la probabilidad de que dos individuos tomados al azar sean de la misma especie." },
+                    { q: "La Convención CITES regula:", o: ["El comercio internacional de especies amenazadas de fauna y flora silvestres.", "Las emisiones globales de dióxido de carbono.", "El uso de plásticos de un solo uso.", "La pesca en aguas internacionales exclusivamente."], a: 0, h: "Sus siglas son Comercio Internacional de Especies Amenazadas." },
+                    { q: "La exclusión competitiva (Principio de Gause) establece que:", o: ["Dos especies pueden compartir un mismo nicho exacto indefinidamente.", "Dos especies en competencia directa por el mismo nicho exacto no pueden coexistir.", "Los depredadores siempre extinguen a sus presas.", "La competencia aumenta la biodiversidad del mismo nivel trófico."], a: 1, h: "Uno siempre terminará desplazando al otro." },
+                    { q: "El ozono estratosférico es beneficioso porque _____, mientras que el ozono troposférico es dañino porque _____.", o: ["Actúa como gas de efecto invernadero / enfría la superficie.", "Filtra la radiación UV / es un contaminante respiratorio y oxidante.", "Fija nitrógeno / destruye ecosistemas marinos.", "Absorbe calor / promueve lluvia ácida."], a: 1, h: "El alto nos protege, el bajo (smog) nos asfixia." },
+                    { q: "La biorremediación utiliza:", o: ["Maquinaria pesada para remover suelos.", "Filtros químicos avanzados.", "Organismos vivos (microorganismos, plantas) para degradar contaminantes.", "Combustión a altas temperaturas para destruir toxinas."], a: 2, h: "Bio = vida, remediación = reparar." },
+                    { q: "El término 'Desarrollo Sustentable' fue popularizado por:", o: ["El Protocolo de Kioto.", "El Informe Brundtland (Nuestro Futuro Común).", "La Cumbre de París.", "El Panel Intergubernamental de Cambio Climático (IPCC)."], a: 1, h: "Publicado en 1987, define satisfacer necesidades del presente sin comprometer el futuro." },
+                    { q: "Una evaluación de impacto ambiental (EIA) es un proceso técnico-administrativo previo a:", o: ["La ejecución de un proyecto o actividad.", "La extinción de una especie.", "La declaración de un parque nacional.", "El pago de multas ambientales."], a: 0, h: "Es de carácter preventivo, se hace antes de construir." }
+                ]
+            },
+            {
+                section: "Seres Vivos (26 Reactivos)",
+                icon: "fa-dna",
+                questions: [
+                    { q: "En la célula eucariota, la modificación, empaquetamiento y distribución de proteínas ocurre principalmente en:", o: ["El Retículo Endoplásmico Liso.", "El Aparato de Golgi.", "El Lisosoma.", "La Mitocondria."], a: 1, h: "Es como la 'oficina postal' de la célula." },
+                    { q: "El modelo de 'mosaico fluido' describe la estructura de:", o: ["La pared celular vegetal.", "El núcleo celular.", "La membrana plasmática.", "El citoesqueleto."], a: 2, h: "Lípidos que se mueven fluidamente con proteínas incrustadas (mosaicos)." },
+                    { q: "En la glucólisis, una molécula de glucosa (6 carbonos) se descompone en dos moléculas de:", o: ["Piruvato (3 carbonos).", "Lactato (3 carbonos).", "Acetil-CoA (2 carbonos).", "Ácido cítrico (6 carbonos)."], a: 0, h: "Es el primer paso de la respiración celular, ocurre en el citosol." },
+                    { q: "La fase oscura de la fotosíntesis (Ciclo de Calvin) se lleva a cabo en:", o: ["La membrana tilacoidal.", "El estroma del cloroplasto.", "El citosol celular.", "La matriz mitocondrial."], a: 1, h: "Es el espacio acuoso dentro del cloroplasto." },
+                    { q: "Si una célula somática humana tiene 46 cromosomas, ¿cuántos cromosomas tiene un gameto maduro (óvulo o espermatozoide)?", o: ["46", "23", "92", "22"], a: 1, h: "Los gametos son haploides (n)." },
+                    { q: "La enzima encargada de añadir nucleótidos durante la replicación del ADN es la:", o: ["ARN polimerasa.", "ADN helicasa.", "ADN ligasa.", "ADN polimerasa."], a: 3, h: "Polimeriza el ADN nuevo." },
+                    { q: "Según el dogma central de la biología molecular, la transcripción es el paso de:", o: ["ARN a Proteína.", "ADN a ARN.", "ADN a ADN.", "ARN a ADN."], a: 1, h: "Ocurre en el núcleo y crea el ARN mensajero." },
+                    { q: "El entrecruzamiento o 'crossing over' de cromosomas homólogos ocurre específicamente durante:", o: ["La Profase de la Mitosis.", "La Metafase I de la Meiosis.", "La Profase I de la Meiosis.", "La Anafase II de la Meiosis."], a: 2, h: "Ocurre al inicio de la meiosis, generando variabilidad genética." },
+                    { q: "Las proteínas están compuestas por unidades estructurales básicas llamadas:", o: ["Monosacáridos.", "Ácidos grasos.", "Nucleótidos.", "Aminoácidos."], a: 3, h: "Existen 20 de ellos estándar en los seres vivos." },
+                    { q: "En la genética mendeliana, el fenotipo es:", o: ["La constitución genética exacta (ej. Aa).", "La expresión física y observable del genotipo.", "El alelo recesivo oculto.", "El lugar que ocupa un gen en el cromosoma."], a: 1, h: "Lo que se puede ver o medir (color, tamaño)." },
+                    { q: "El transporte activo a través de membrana se caracteriza por:", o: ["Mover sustancias a favor del gradiente sin usar energía.", "Mover sustancias en contra del gradiente requiriendo gasto de ATP.", "Solo transportar agua (ósmosis).", "Ser un proceso pasivo mediado por canales iónicos."], a: 1, h: "Funciona como una bomba que requiere combustible (ATP)." },
+                    { q: "El ciclo de Krebs (ciclo del ácido cítrico) ocurre en:", o: ["El citoplasma celular.", "La membrana externa mitocondrial.", "La matriz mitocondrial.", "El estroma del cloroplasto."], a: 2, h: "Es el interior de la mitocondria." },
+                    { q: "Una mutación 'silenciosa' o 'sinónima' en el ADN se define como aquella que:", o: ["Causa la muerte celular programada.", "Cambia la base nitrogenada pero NO altera la secuencia de aminoácidos de la proteína.", "Introduce un codón de parada prematuro.", "Inactiva todo el cromosoma."], a: 1, h: "Gracias a la redundancia del código genético, no se nota en la proteína." },
+                    { q: "La estructura cuaternaria de una proteína se refiere a:", o: ["Su secuencia lineal de aminoácidos.", "Los plegamientos locales como alfa hélices.", "La conformación tridimensional completa de una sola cadena.", "La unión y ensamble de múltiples cadenas polipeptídicas (subunidades)."], a: 3, h: "Ejemplo clásico: la hemoglobina con sus 4 subunidades." },
+                    { q: "En plantas vasculares, el tejido encargado de transportar agua y minerales desde la raíz a las hojas es el:", o: ["Floema.", "Xilema.", "Parénquima.", "Colénquima."], a: 1, h: "El otro transporta savia elaborada (azúcares)." },
+                    { q: "La homeostasis se define como:", o: ["El crecimiento descontrolado de un tejido.", "La capacidad de un organismo de mantener sus condiciones internas estables.", "La reducción del ritmo metabólico en invierno (hibernación).", "El intercambio de gases en los alvéolos pulmonares."], a: 1, h: "Termorregulación, equilibrio de pH, etc." },
+                    { q: "Los lípidos cumplen la función fisiológica principal de:", o: ["Catálisis enzimática rápida.", "Almacenamiento de información genética.", "Reserva de energía a largo plazo y formación de membranas.", "Transporte de oxígeno en sangre."], a: 2, h: "Grasas, aceites y fosfolípidos." },
+                    { q: "La unión entre dos neuronas para transmitir el impulso nervioso mediante neurotransmisores se llama:", o: ["Sinapsis.", "Cruce quiasmático.", "Unión neuromuscular.", "Nódulo de Ranvier."], a: 0, h: "Es el espacio de comunicación química neuronal." },
+                    { q: "El tipo de enlace químico fuerte que une a los aminoácidos para formar proteínas se denomina:", o: ["Enlace puente de hidrógeno.", "Enlace glucosídico.", "Enlace peptídico.", "Enlace fosfodiéster."], a: 2, h: "Une el grupo amino de uno con el carboxilo de otro." },
+                    { q: "La apoptosis es:", o: ["La división incontrolada de células (cáncer).", "La muerte celular programada de forma natural y limpia.", "La destrucción celular por infección viral (lisis).", "La diferenciación de células madre en tejidos maduros."], a: 1, h: "Es el 'suicidio celular' ordenado que previene enfermedades." },
+                    { q: "Un organismo heterocigoto para dos rasgos no ligados (AaBb) que se cruza con otro heterocigoto (AaBb) producirá una proporción fenotípica mendeliana clásica de:", o: ["9:3:3:1", "1:2:1", "3:1", "1:1:1:1"], a: 0, h: "Tercera ley de Mendel (Segregación independiente)." },
+                    { q: "La hormona producida por el páncreas encargada de reducir los niveles de glucosa en sangre es la:", o: ["Adrenalina.", "Glucagón.", "Tiroxina.", "Insulina."], a: 3, h: "El glucagón hace lo contrario (eleva la glucosa)." },
+                    { q: "La base nitrogenada Uracilo (U) en el ARN sustituye a cuál base del ADN:", o: ["Adenina (A).", "Timina (T).", "Citosina (C).", "Guanina (G)."], a: 1, h: "El par A se une con U en el ARN." },
+                    { q: "En la inmunidad adaptativa humana, las células encargadas de producir anticuerpos son:", o: ["Macrófagos.", "Linfocitos T.", "Linfocitos B (células plasmáticas).", "Eritrocitos."], a: 2, h: "Los otros linfocitos (T) tienen función citotóxica o colaboradora." },
+                    { q: "La estructura anatómica donde ocurre el principal intercambio de gases respiratorios en mamíferos son los:", o: ["Bronquios.", "Alvéolos.", "Traqueolas.", "Branquias."], a: 1, h: "Pequeños sacos de aire al final de los pulmones." },
+                    { q: "El codón de inicio estándar en la traducción genética es AUG, que codifica para el aminoácido:", o: ["Triptófano.", "Glicina.", "Metionina.", "Cisteína."], a: 2, h: "Casi todas las proteínas empiezan con este aminoácido." }
+                ]
+            }
+        ];
+
+        let currentSectionIndex = 0;
+        // Objeto para guardar las respuestas del usuario { sectionIndex: { questionIndex: selectedOptionIndex } }
+        let userAnswers = { 0: {}, 1: {}, 2: {} };
+
+        const appDiv = document.getElementById('app');
+        const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
+        const sectionTitleProgress = document.getElementById('section-title-progress');
+
+        function renderSection() {
+            window.scrollTo(0,0);
+            const sectionData = db[currentSectionIndex];
+            const savedAnswers = userAnswers[currentSectionIndex];
+            
+            // Actualizar header progress
+            const progressPercent = Math.round((currentSectionIndex / 3) * 100);
+            progressBar.style.width = `${progressPercent}%`;
+            progressText.innerText = `${progressPercent}%`;
+            sectionTitleProgress.innerText = `Sección ${currentSectionIndex + 1} de 3`;
+
+            let html = `
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden fade-in">
+                    <div class="bg-inst-900 text-white p-6 border-b-4 border-inst-primary">
+                        <h2 class="text-2xl font-bold flex items-center gap-3">
+                            <i class="fas ${sectionData.icon} text-inst-primary"></i> 
+                            ${sectionData.section}
+                        </h2>
+                    </div>
+                    <div class="p-6 md:p-10 space-y-12">
+            `;
+
+            sectionData.questions.forEach((q, qIndex) => {
+                // Generar un número de pregunta global basado en la sección
+                let globalQNum = qIndex + 1;
+                if(currentSectionIndex === 1) globalQNum += db[0].questions.length;
+                if(currentSectionIndex === 2) globalQNum += db[0].questions.length + db[1].questions.length;
+
+                html += `
+                    <div class="border-b border-slate-100 pb-8 last:border-0 last:pb-0" id="q-container-${qIndex}">
+                        <div class="flex justify-between items-start gap-4 mb-5">
+                            <h3 class="text-lg font-semibold text-slate-800 leading-snug">
+                                <span class="text-inst-primary mr-1">${globalQNum}.</span> ${q.q}
+                            </h3>
+                            <button type="button" onclick="toggleHint(${currentSectionIndex}, ${qIndex})" class="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-inst-accent bg-yellow-50 hover:bg-yellow-100 border border-yellow-200 rounded-lg transition-colors">
+                                <i class="fas fa-lightbulb"></i> Apoyo
+                            </button>
+                        </div>
+                        
+                        <div id="hint-${currentSectionIndex}-${qIndex}" class="hidden mb-5 p-4 bg-yellow-50 border-l-4 border-inst-accent rounded-r-lg text-sm text-yellow-800">
+                            <strong>Pista:</strong> ${q.h}
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                `;
+
+                q.o.forEach((opt, optIndex) => {
+                    const isChecked = savedAnswers[qIndex] === optIndex ? 'checked' : '';
+                    html += `
+                        <label class="relative cursor-pointer group">
+                            <input type="radio" name="q-${currentSectionIndex}-${qIndex}" value="${optIndex}" class="peer sr-only option-radio" onchange="saveAnswer(${currentSectionIndex}, ${qIndex}, ${optIndex})" ${isChecked}>
+                            <div class="w-full border-2 border-slate-200 rounded-xl p-4 transition-all duration-200 group-hover:border-inst-primary text-slate-700 bg-white">
+                                <span class="font-medium text-slate-900 mr-2">${String.fromCharCode(65 + optIndex)})</span> 
+                                ${opt}
+                                <i class="fas fa-check-circle absolute top-4 right-4 text-inst-primary opacity-0 scale-50 transition-all duration-300 check-icon text-xl"></i>
+                            </div>
+                        </label>
+                    `;
+                });
+
+                html += `</div></div>`;
+            });
+
+            // Botones de navegación de la sección
+            html += `
+                    </div>
+                    <div class="bg-slate-50 border-t border-slate-200 p-6 flex justify-between items-center">
+                        ${currentSectionIndex > 0 ? 
+                            `<button onclick="prevSection()" class="px-6 py-2.5 rounded-lg border-2 border-slate-300 text-slate-600 font-medium hover:bg-slate-100 hover:border-slate-400 transition-colors">
+                                <i class="fas fa-arrow-left mr-2"></i> Anterior
+                            </button>` : '<div></div>'
+                        }
+                        
+                        ${currentSectionIndex < 2 ?
+                            `<button onclick="nextSection()" class="px-8 py-2.5 rounded-lg bg-inst-primary text-white font-medium hover:bg-sky-700 shadow-md transition-all">
+                                Siguiente Sección <i class="fas fa-arrow-right ml-2"></i>
+                            </button>` :
+                            `<button onclick="finishTest()" class="px-8 py-2.5 rounded-lg bg-inst-900 text-white font-medium hover:bg-slate-800 shadow-md transition-all border-2 border-inst-accent">
+                                Finalizar Simulación <i class="fas fa-flag-checkered ml-2"></i>
+                            </button>`
+                        }
+                    </div>
+                </div>
+            `;
+            
+            appDiv.innerHTML = html;
+        }
+
+        function toggleHint(secIdx, qIdx) {
+            const el = document.getElementById(`hint-${secIdx}-${qIdx}`);
+            if(el.classList.contains('hidden')) {
+                el.classList.remove('hidden');
+                el.classList.add('fade-in');
+            } else {
+                el.classList.add('hidden');
+            }
+        }
+
+        function saveAnswer(secIdx, qIdx, optIdx) {
+            userAnswers[secIdx][qIdx] = optIdx;
+        }
+
+        function validateCurrentSection() {
+            const sectionData = db[currentSectionIndex];
+            const totalQuestions = sectionData.questions.length;
+            const answeredQuestions = Object.keys(userAnswers[currentSectionIndex]).length;
+            
+            return totalQuestions === answeredQuestions;
+        }
+
+        function showAlert() {
+            document.getElementById('alert-modal').classList.replace('hidden', 'flex');
+        }
+
+        function nextSection() {
+            if(!validateCurrentSection()) {
+                showAlert();
+                return;
+            }
+            currentSectionIndex++;
+            renderSection();
+        }
+
+        function prevSection() {
+            currentSectionIndex--;
+            renderSection();
+        }
+
+        function finishTest() {
+            if(!validateCurrentSection()) {
+                showAlert();
+                return;
+            }
+            
+            // Evaluar y mostrar resultados
+            progressBar.style.width = '100%';
+            progressText.innerText = '100%';
+            sectionTitleProgress.innerText = "Simulación Completada";
+            
+            let totalCorrect = 0;
+            let totalQuestions = 80; // 27+27+26
+            
+            let breakdownHtml = "";
+
+            db.forEach((sec, secIdx) => {
+                let secCorrect = 0;
+                sec.questions.forEach((q, qIdx) => {
+                    if(userAnswers[secIdx][qIdx] === q.a) {
+                        secCorrect++;
+                        totalCorrect++;
+                    }
+                });
+                breakdownHtml += `
+                    <div class="flex justify-between items-center py-3 border-b border-slate-100 last:border-0">
+                        <span class="font-medium text-slate-700">${sec.section.split(' (')[0]}</span>
+                        <span class="font-bold text-inst-primary">${secCorrect} / ${sec.questions.length}</span>
+                    </div>
+                `;
+            });
+
+            const scorePercent = Math.round((totalCorrect / totalQuestions) * 100);
+            
+            let resultMessage = "";
+            let resultColor = "";
+            let resultIcon = "";
+            if(scorePercent >= 80) {
+                resultMessage = "¡Excelente Desempeño! Nivel Sobresaliente.";
+                resultColor = "text-green-600";
+                resultIcon = "fa-trophy";
+            } else if(scorePercent >= 60) {
+                resultMessage = "Desempeño Satisfactorio. Continúa repasando.";
+                resultColor = "text-inst-primary";
+                resultIcon = "fa-thumbs-up";
+            } else {
+                resultMessage = "Aún no satisfactorio. Requiere estudio intensivo.";
+                resultColor = "text-amber-600";
+                resultIcon = "fa-book-reader";
+            }
+
+            const html = `
+                <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden fade-in text-center max-w-2xl mx-auto">
+                    <div class="bg-inst-900 text-white p-8">
+                        <i class="fas ${resultIcon} text-5xl text-inst-accent mb-4"></i>
+                        <h2 class="text-3xl font-bold">Resultados del Simulador</h2>
+                    </div>
+                    <div class="p-8">
+                        <div class="mb-8">
+                            <p class="text-slate-500 text-sm font-semibold uppercase tracking-wider mb-2">Puntaje Global</p>
+                            <div class="text-6xl font-bold ${resultColor} mb-2">${totalCorrect} / 80</div>
+                            <p class="text-lg font-medium text-slate-800">${resultMessage} (${scorePercent}%)</p>
+                        </div>
+                        
+                        <div class="bg-slate-50 rounded-xl p-6 mb-8 text-left border border-slate-200">
+                            <h3 class="font-bold text-slate-800 mb-4 border-b border-slate-200 pb-2">Desglose por Área Disciplinar</h3>
+                            ${breakdownHtml}
+                        </div>
+
+                        <button onclick="location.reload()" class="bg-inst-900 text-white px-8 py-3 rounded-lg font-bold hover:bg-slate-800 transition-colors border-2 border-transparent hover:border-inst-accent">
+                            <i class="fas fa-redo mr-2"></i> Realizar Nueva Evaluación
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            appDiv.innerHTML = html;
+            window.scrollTo(0,0);
+        }
+
+        // Iniciar
+        renderSection();
+    </script>
+</body>
+</html>
